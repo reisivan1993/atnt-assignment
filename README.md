@@ -3,10 +3,31 @@
 This project is a Spring Boot implementation of the backend APIs for a ticket booking system. It provides a set of RESTful APIs that enable client applications to interact with the ticket booking system and perform various operations.
 ## High Level Design (not all implemented)
 ![image](src/main/resources/ticket_design.png)
+
+## Data Pipeline
+1. get data from ALM
+    #### source A
+    Polling the API
+    Tech: Spring Boot with @Scheduled and WebClient.
+    A scheduled task runs every minute to fetch the latest snapshot.
+    and stream all batch to topic
+    
+    #### source B
+    Event listener
+    Tech: Spring Boot with Kafka (or Spring Events for simplicity).
+    Consume events from a Kafka topic or internal event bus and move data to centralized topic to decouple system from ALM.
+2. Data Transformation - map event data to domain object 
+3. Database Operations(Spring Data JPA) - save mapped data into db
+4. DB constraints - PostgreSQL ensures no overlaps or double-bookings.
+   ![image](src/main/resources/flow_summary.png)
+
+
 ## Functional Requirements
 - Book Tickets
 - View an movies (choose seat, etc)
 - Search  for movies
+
+
 
 ## Non-Functional Requirement
 - strong consistency for booking ticket (no double booking)
