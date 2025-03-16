@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Setter @Getter @AllArgsConstructor @NoArgsConstructor
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", uniqueConstraints = @UniqueConstraint(columnNames = {"showtime_id", "seat_number"}))
 public class Ticket {
     @Id @JoinColumn(name = "ticket_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)

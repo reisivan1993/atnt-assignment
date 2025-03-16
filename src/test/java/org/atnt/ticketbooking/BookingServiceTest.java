@@ -17,12 +17,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Commit;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Transactional
@@ -46,9 +51,18 @@ class BookingServiceTest {
     private Showtime showtime2; // Cinema 2, Inception
     private Showtime showtime3; // Cinema 1, Dark Knight
 
+    @MockBean
+    private Clock clock; // Mock the Clock bean
+
     @BeforeEach
     void setUp() {
-        // Insert movies
+        // Mock the clock to a specific time (e.g., 2025-03-16T14:00)
+        Instant fixedInstant = Instant.parse("2025-03-16T14:00:00Z");
+        Clock fixedClock = Clock.fixed(fixedInstant, ZoneId.of("UTC"));
+        when(clock.instant()).thenReturn(fixedInstant);
+        when(clock.getZone()).thenReturn(fixedClock.getZone());
+
+// Insert movies
         inception = new Movie();
         inception.setMovieTitle("Inception");
         inception.setGenre("Sci-Fi");
@@ -56,6 +70,7 @@ class BookingServiceTest {
         inception.setRating("PG-13");
         inception.setReleaseYear(2010);
         inception = movieRepository.save(inception);
+        movieRepository.flush();
         System.out.println("Inception ID: " + inception.getId());
 
         darkKnight = new Movie();
@@ -65,10 +80,10 @@ class BookingServiceTest {
         darkKnight.setRating("PG-13");
         darkKnight.setReleaseYear(2008);
         darkKnight = movieRepository.save(darkKnight);
-//        movieRepository.flush();
+        movieRepository.flush();
         System.out.println("Dark Knight ID: " + darkKnight.getId());
 
-// Insert showtimes
+        // Insert showtimes
         showtime1 = new Showtime();
         showtime1.setMovie(inception);
         showtime1.setTheater("Cinema 1");
@@ -78,7 +93,8 @@ class BookingServiceTest {
         showtime1.setAvailableSeats(48);
         showtime1.setPrice(12.50);
         showtime1 = showtimeRepository.save(showtime1);
-//        showtimeRepository.flush();
+        showtimeRepository.flush();
+        System.out.println("Showtime1 ID: " + showtime1.getId());
 
         showtime2 = new Showtime();
         showtime2.setMovie(inception);
@@ -89,8 +105,8 @@ class BookingServiceTest {
         showtime2.setAvailableSeats(30);
         showtime2.setPrice(12.50);
         showtime2 = showtimeRepository.save(showtime2);
-//        showtimeRepository.flush();
-//        System.out.println("Showtime2 ID: " + showtime2.getId());
+        showtimeRepository.flush();
+        System.out.println("Showtime2 ID: " + showtime2.getId());
 
         showtime3 = new Showtime();
         showtime3.setMovie(darkKnight);
@@ -101,8 +117,8 @@ class BookingServiceTest {
         showtime3.setAvailableSeats(49);
         showtime3.setPrice(12.50);
         showtime3 = showtimeRepository.save(showtime3);
-//        showtimeRepository.flush();
-//        System.out.println("Showtime3 ID: " + showtime3.getId());
+        showtimeRepository.flush();
+        System.out.println("Showtime3 ID: " + showtime3.getId());
 
         // Pre-book seats
         Ticket ticket1A1 = new Ticket();
@@ -110,11 +126,11 @@ class BookingServiceTest {
         ticket1A1.setUserId(null);
         ticket1A1.setSeatNumber("A1");
         ticket1A1.setStatus(BookingStatus.BOOKED);
-        ticket1A1.setPriceBooked(12.50); // Match entity field name
+        ticket1A1.setPriceBooked(12.50);
         ticket1A1.setCreatedAt(LocalDateTime.parse("2025-03-15T10:00:00"));
         ticket1A1.setUpdatedAt(LocalDateTime.parse("2025-03-15T10:00:00"));
         ticketRepository.save(ticket1A1);
-//        ticketRepository.flush();
+        ticketRepository.flush();
 
         Ticket ticket1A2 = new Ticket();
         ticket1A2.setShowtime(showtime1);
@@ -125,7 +141,7 @@ class BookingServiceTest {
         ticket1A2.setCreatedAt(LocalDateTime.parse("2025-03-15T10:00:00"));
         ticket1A2.setUpdatedAt(LocalDateTime.parse("2025-03-15T10:00:00"));
         ticketRepository.save(ticket1A2);
-//        ticketRepository.flush();
+        ticketRepository.flush();
 
         Ticket ticket3B1 = new Ticket();
         ticket3B1.setShowtime(showtime3);
@@ -136,16 +152,12 @@ class BookingServiceTest {
         ticket3B1.setCreatedAt(LocalDateTime.parse("2025-03-15T10:00:00"));
         ticket3B1.setUpdatedAt(LocalDateTime.parse("2025-03-15T10:00:00"));
         ticketRepository.save(ticket3B1);
-//        ticketRepository.flush();
+        ticketRepository.flush();
     }
 
     @Test
     void testBookTicket_Success() {
-        TicketRequest request = new TicketRequest();
-        request.setUserId(101);
-        request.setShowtimeId(showtime1.getId()); // Update to dynamic ID //        request.setTicketId(1L);
-        request.setSeatNumber("A3");
-
+        TicketRequest request = new TicketRequest(101, showtime1.getId(), "A3");
         Ticket ticket = bookingService.bookTicket(request);
 
         assertNotNull(ticket.getId());
@@ -159,13 +171,9 @@ class BookingServiceTest {
     }
 
     @Test
-    void testBookTicket_SeatAlreadyBooked() {
-        TicketRequest request = new TicketRequest();
-        request.setUserId(101);
-        request.setShowtimeId(showtime1.getId());
-        request.setSeatNumber("A1"); // Already booked from setup
-
-        assertThrows(BookingException.class, () -> bookingService.bookTicket(request));
+    void testBookTicket_ShowtimeNotFound() {
+        TicketRequest request = new TicketRequest(101, 999L, "A1");
+        assertThrows(ResourceNotFoundException.class, () -> bookingService.bookTicket(request));
     }
 
     @Test
@@ -179,40 +187,39 @@ class BookingServiceTest {
             bookingService.bookTicket(request);
         }
 
-        TicketRequest request = new TicketRequest();
-        request.setUserId(101);
-        request.setShowtimeId(showtime2.getId());
-        request.setSeatNumber("B31");
-
+        TicketRequest request = new TicketRequest(101, showtime2.getId(), "B31");
         assertThrows(BookingException.class, () -> bookingService.bookTicket(request));
     }
 
     @Test
-    void testBookTicket_ShowtimeNotFound() {
-        TicketRequest request = new TicketRequest();
-        request.setUserId(101);
-        request.setShowtimeId(1L);
-        request.setSeatNumber("A1");
-
-        assertThrows(ResourceNotFoundException.class, () -> bookingService.bookTicket(request));
+    void testBookTicket_SeatAlreadyBooked() {
+        TicketRequest request = new TicketRequest(101, showtime1.getId(), "A1");
+        assertThrows(BookingException.class, () -> bookingService.bookTicket(request));
     }
 
     @Test
     void testCancelTicket_Success() {
-        // Book a new ticket to cancel
-        TicketRequest request = new TicketRequest();
-        request.setUserId(101);
-        request.setShowtimeId(showtime1.getId());
-        request.setSeatNumber("A3");
+        // Book a ticket
+        TicketRequest request = new TicketRequest(101, showtime1.getId(), "A5");
         Ticket ticket = bookingService.bookTicket(request);
+        assertNotNull(ticket.getId());
+        Showtime updatedShowtimeAfterBooking = showtimeRepository.findById(showtime1.getId()).get();
+        assertEquals(47, updatedShowtimeAfterBooking.getAvailableSeats());
+
         bookingService.cancelBooking(ticket.getId());
-        Ticket cancelledTicket = ticketRepository.findById(ticket.getId()).get();
-        assertEquals(BookingStatus.AVAILABLE, cancelledTicket.getStatus());
-        assertEquals(48, cancelledTicket.getShowtime().getAvailableSeats());
+
+        // Verify the ticket status
+        Optional<Ticket> cancelledTicket = ticketRepository.findById(ticket.getId());
+        assertTrue(cancelledTicket.isPresent());
+        assertEquals(BookingStatus.AVAILABLE, cancelledTicket.get().getStatus());
+
+        // Verify available seats incremented
+        Showtime updatedShowtimeAfterCanceling = showtimeRepository.findById(showtime1.getId()).get();
+        assertEquals(48, updatedShowtimeAfterCanceling.getAvailableSeats());
     }
 
     @Test
-    void testCancelTicket_WithinThreeHours() {
+    void testCancelTicket_WithinThreeHours_Fails() {
         // Adjust showtime3 to be within 3 hours
         showtime3.setStartTime(LocalDateTime.now().plusMinutes(30));
         showtime3.setEndTime(showtime3.getStartTime().plusMinutes(152));
@@ -229,47 +236,89 @@ class BookingServiceTest {
     }
 
     @Test
+    void testChangeTicket_Success() {
+        // Book a ticket
+        TicketRequest request = new TicketRequest(101, showtime1.getId(), "A5");
+        Ticket ticket = bookingService.bookTicket(request);
+        assertNotNull(ticket.getId());
+        Long ticketId = ticket.getId();
+
+        // Change the ticket seat (mocked time is 2025-03-16T14:00, 4 hours before showtime)
+        TicketChangeRequest changeRequest = new TicketChangeRequest("A6");
+        Ticket updatedTicket = bookingService.changeTicket(ticketId, changeRequest);
+
+        assertNotNull(updatedTicket.getId());
+        assertEquals(ticketId, updatedTicket.getId());
+        assertEquals("A6", updatedTicket.getSeatNumber());
+        assertEquals(101, updatedTicket.getUserId());
+        assertEquals(showtime1.getId(), updatedTicket.getShowtime().getId());
+
+        // Verify the original seat is available
+        Optional<Ticket> originalSeat = bookingService.findTicketByShowtimeIdAndSeatNumber(showtime1.getId(), "A5");
+        assertFalse(originalSeat.isPresent(), "Original seat A5 should be available");
+    }
+
+    @Test
+    void testChangeTicket_WithinThreeHours_Fails() {
+        // Set the clock to 2025-03-16T16:00 (2 hours before showtime)
+        Instant fixedInstant = Instant.parse("2025-03-16T16:00:00Z");
+        Clock fixedClock = Clock.fixed(fixedInstant, ZoneId.of("UTC"));
+        when(clock.instant()).thenReturn(fixedInstant);
+        when(clock.getZone()).thenReturn(fixedClock.getZone());
+
+        // Book a ticket
+        TicketRequest request = new TicketRequest(101, showtime1.getId(), "A5");
+        Ticket ticket = bookingService.bookTicket(request);
+        assertNotNull(ticket.getId());
+        Long ticketId = ticket.getId();
+
+        // Attempt to change the ticket (should fail)
+        TicketChangeRequest changeRequest = new TicketChangeRequest("A6");
+        assertThrows(BookingException.class, () -> bookingService.changeTicket(ticketId, changeRequest));
+    }
+
+    @Test
+    void testChangeTicket_SeatAlreadyBooked() {
+        // Book a ticket on A5
+        TicketRequest request1 = new TicketRequest(101, showtime1.getId(), "A5");
+        Ticket ticket1 = bookingService.bookTicket(request1);
+        assertNotNull(ticket1.getId());
+
+        // Book another ticket on A6
+        TicketRequest request2 = new TicketRequest(102, showtime1.getId(), "A6");
+        Ticket ticket2 = bookingService.bookTicket(request2);
+        assertNotNull(ticket2.getId());
+
+        // Try to change ticket1 to A6 (already booked)
+        TicketChangeRequest changeRequest = new TicketChangeRequest("A6");
+        assertThrows(BookingException.class, () -> bookingService.changeTicket(ticket1.getId(), changeRequest));
+    }
+
+    @Test
     void testCancelTicket_NotFound() {
         assertThrows(ResourceNotFoundException.class, () -> bookingService.cancelBooking(999L));
     }
 
     @Test
-    void testChangeTicket_Success() {
-        // Book a new ticket to change
-        TicketRequest request = new TicketRequest();
-        request.setUserId(101);
-        request.setShowtimeId(showtime1.getId());
-        request.setSeatNumber("A3");
-        Ticket ticket = bookingService.bookTicket(request);
+    void testUniqueConstraintViolation() {
+        TicketRequest request1 = new TicketRequest(101, showtime1.getId(), "A3");
+        Ticket ticket1 = bookingService.bookTicket(request1);
 
-        TicketChangeRequest changeRequest = new TicketChangeRequest();
-        changeRequest.setNewSeatNumber("A4");
+        assertNotNull(ticket1.getId());
+        assertEquals(101, ticket1.getUserId());
+        assertEquals("A3", ticket1.getSeatNumber());
+        assertEquals(showtime1.getId(), ticket1.getShowtime().getId());
 
-        Ticket updatedTicket = bookingService.changeTicket(ticket.getId(), changeRequest);
+        TicketRequest request2 = new TicketRequest(102, showtime1.getId(), "A3");
+        BookingException thrown = assertThrows(BookingException.class, () -> {
+            bookingService.bookTicket(request2);
+        });
 
-        assertEquals("A4", updatedTicket.getSeatNumber());
-        assertEquals(BookingStatus.BOOKED, updatedTicket.getStatus());
-        assertEquals(47, updatedTicket.getShowtime().getAvailableSeats());
-    }
+        assertEquals("Seat A3 is already booked for showtime ID: " + showtime1.getId(), thrown.getMessage());
 
-    @Test
-    void testChangeTicket_WithinThreeHours() {
-        // Adjust showtime3 to be within 3 hours
-        showtime3.setStartTime(LocalDateTime.now().plusMinutes(30));
-        showtime3.setEndTime(showtime3.getStartTime().plusMinutes(152));
-        showtimeRepository.save(showtime3);
-
-        // Book a new ticket to change
-        TicketRequest request = new TicketRequest();
-        request.setUserId(101);
-        request.setShowtimeId(showtime3.getId());
-        request.setSeatNumber("B2");
-        Ticket ticket = bookingService.bookTicket(request);
-
-        TicketChangeRequest changeRequest = new TicketChangeRequest();
-        changeRequest.setNewSeatNumber("B3");
-
-        assertThrows(BookingException.class, () -> bookingService.changeTicket(ticket.getId(), changeRequest));
+        Optional<Ticket> bookedTicket = bookingService.findTicketByShowtimeIdAndSeatNumber(showtime1.getId(), "A3");
+        assertTrue(bookedTicket.isPresent());
+        assertEquals(101, bookedTicket.get().getUserId());
     }
 
     @Test

@@ -14,7 +14,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @EnableScheduling
 @Service
@@ -26,6 +29,15 @@ public class BookingService {
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
+
+    private final Clock clock;
+
+    @Autowired
+    public BookingService(TicketRepository ticketRepository, ShowtimeRepository showtimeRepository, Clock clock) {
+        this.ticketRepository = ticketRepository;
+        this.showtimeRepository = showtimeRepository;
+        this.clock = clock != null ? clock : Clock.systemDefaultZone();
+    }
 
 //    @Autowired
 //    private final ScheduledExecutorService executorService;
@@ -41,10 +53,10 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Showtime not found"));
 
         if (showtime.getAvailableSeats() <= 0) {
-            throw new BookingException("No available seats for showtime ID " + showtime.getId());
+            throw new BookingException("No available seats for showtime ID: " + showtime.getId());
         }
         if (ticketRepository.existsByShowtimeIdAndSeatNumber(request.getShowtimeId(), request.getSeatNumber())) {
-            throw new BookingException("Seat " + request.getSeatNumber() + " is already booked for showtime ID " + showtime.getId());
+            throw new BookingException("Seat " + request.getSeatNumber() + " is already booked for showtime ID: " + showtime.getId());
         }
 
         Ticket ticket = new Ticket();
@@ -53,15 +65,13 @@ public class BookingService {
         ticket.setSeatNumber(request.getSeatNumber());
         ticket.setPriceBooked(showtime.getPrice());
         ticket.setStatus(BookingStatus.BOOKED);
-        ticket.setCreatedAt(LocalDateTime.now());
-        ticket.setUpdatedAt(LocalDateTime.now());
+        ticket.setCreatedAt(LocalDateTime.now(clock));
+        ticket.setUpdatedAt(LocalDateTime.now(clock));
         updateShowtimeAvailability(showtime.getId(), showtime.getAvailableSeats() - 1);
         showtimeRepository.save(showtime);
 
 
 //        ticket.setReservationExpiry(LocalDateTime.now().plusMinutes(RESERVATION_TIMEOUT_MINUTES));
-
-
 
 //        executorService.schedule(() -> cleanupExpiredReservation(savedTicket.getId()),
 //                RESERVATION_TIMEOUT_MINUTES, TimeUnit.MINUTES);
@@ -75,12 +85,12 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket ID " + ticketId + " not found"));
 
         Showtime showtime = ticket.getShowtime();
-        if (showtime.getStartTime().minusHours(3).isBefore(LocalDateTime.now())) {
+        if (showtime.getStartTime().minusHours(3).isBefore(LocalDateTime.now(clock))) {
             throw new BookingException("Cannot cancel ticket ID " + ticketId + " within 3 hours of showtime starting at " + showtime.getStartTime());
         }
 
         ticket.setStatus(BookingStatus.AVAILABLE);
-        ticket.setUpdatedAt(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now(clock));
         updateShowtimeAvailability(showtime.getId(), showtime.getAvailableSeats() + 1);
 
         ticketRepository.save(ticket);
@@ -92,23 +102,32 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket ID " + ticketId + " not found"));
         Showtime showtime = ticket.getShowtime();
 
-        if (showtime.getStartTime().minusHours(3).isBefore(LocalDateTime.now())) {
+        if (showtime.getStartTime().minusHours(3).isBefore(LocalDateTime.now(clock))) {
             throw new BookingException("Cannot change ticket ID " + ticketId + " within 3 hours of showtime starting at " + showtime.getStartTime());
         }
         if (ticketRepository.existsByShowtimeIdAndSeatNumber(showtime.getId(), request.getNewSeatNumber())) {
-            throw new BookingException("New seat " + request.getNewSeatNumber() + " is already booked for showtime ID " + showtime.getId());
+            throw new BookingException("New seat " + request.getNewSeatNumber() + " is already booked for showtime ID: " + showtime.getId());
         }
 
         ticket.setSeatNumber(request.getNewSeatNumber());
-        ticket.setUpdatedAt(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now(clock));
         return ticketRepository.save(ticket);
     }
+
+    @Transactional(readOnly = true)
+    public List<Ticket> getBookingHistory(Long userId) {
+        return ticketRepository.findByUserId(userId);
+    }
+
     private void updateShowtimeAvailability(Long showtimeId, int newAvailability) {
         Showtime showtime = showtimeRepository.findById(showtimeId).orElseThrow(() -> new ResourceNotFoundException("Showtime not found"));
         showtime.setAvailableSeats(newAvailability);
         showtimeRepository.save(showtime);
     }
 
+    public Optional<Ticket> findTicketByShowtimeIdAndSeatNumber(Long showtimeId, String seatNumber) {
+        return ticketRepository.findByShowtimeIdAndSeatNumber(showtimeId, seatNumber);
+    }
 //    @Scheduled(fixedRate = 5000)
 //    @Transactional
 //    public void cleanupExpiredReservation(Long bookingId) {

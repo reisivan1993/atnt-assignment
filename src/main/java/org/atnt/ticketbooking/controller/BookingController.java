@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/bookings")
 @Tag(name = "Booking Management", description = "Operations pertaining to ticket booking")
@@ -61,5 +63,17 @@ public class BookingController {
             @Parameter(description = "Ticket change request", required = true) @RequestBody TicketChangeRequest request) {
         Ticket updatedTicket = bookingService.changeTicket(ticketId, request);
         return ResponseEntity.ok(updatedTicket);
+    }
+
+    @GetMapping("/history/{userId}")
+    @Operation(summary = "Get booking history for a user", description = "Retrieves all past and current bookings for a user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Booking history retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "User has no bookings")
+    })
+    public ResponseEntity<List<Ticket>> getBookingHistory(
+            @Parameter(description = "ID of the user to retrieve booking history for", required = true) @PathVariable Long userId) {
+        List<Ticket> bookingHistory = bookingService.getBookingHistory(userId);
+        return ResponseEntity.ok(bookingHistory);
     }
 }
