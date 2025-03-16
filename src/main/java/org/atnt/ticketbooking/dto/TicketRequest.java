@@ -13,7 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TicketRequest {
-    private Long ticketId;
     @NotBlank
     private Integer userId;
 

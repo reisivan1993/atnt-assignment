@@ -23,7 +23,7 @@ public class BookingController {
     @Autowired
     private BookingService bookingService;
 
-    @PostMapping("/book")
+    @PostMapping("/confirm")
     @Operation(summary = "Book a new ticket", description = "Creates a new ticket booking")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Ticket successfully booked"),
@@ -36,7 +36,7 @@ public class BookingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ticket);
     }
 
-    @DeleteMapping("/{ticketId}")
+    @DeleteMapping("/cancel/{ticketId}")
     @Operation(summary = "Cancel an existing ticket", description = "Cancels a ticket by ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ticket successfully canceled"),
@@ -49,7 +49,7 @@ public class BookingController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/{ticketId}")
+    @PutMapping("/change/{ticketId}")
     @Operation(summary = "Change an existing ticket", description = "Updates a ticket’s details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ticket successfully updated"),

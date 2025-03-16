@@ -14,7 +14,7 @@ public class SwaggerConfig {
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
                 .group("public")
-                .packagesToScan("org.atnt.ticketbooking.*")
+                .packagesToScan("org.atnt.ticketbooking.controller")
                 .build();
     }
 
