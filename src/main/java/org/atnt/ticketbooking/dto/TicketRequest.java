@@ -12,9 +12,10 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookingRequest {
+public class TicketRequest {
+    private Long ticketId;
     @NotBlank
-    private String userId;
+    private Integer userId;
 
     @NotNull
     private Long showtimeId;

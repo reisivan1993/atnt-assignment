@@ -1,13 +1,6 @@
 package org.atnt.ticketbooking.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,16 +15,22 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_showtime_movie_start", columnList = "movie_id,startTime")
         })
 public class Showtime {
-    // Getters and setters
-    @Id
+    @Id @Column(name = "showtime_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
     @JoinColumn(name = "movie_id")
     private Movie movie;
-
+    private String theater;
+    @Column(name = "start_time")
     private LocalDateTime startTime;
-    private int maxSeats;
-    private int availableSeats;
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+    @Column(name = "max_seats")
+    private Integer maxSeats;
+    @Column(name = "available_Seats")
+    private Integer availableSeats;
+    @Column(name = "price")
+    private Double price;
 }

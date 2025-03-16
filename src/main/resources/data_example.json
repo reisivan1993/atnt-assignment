@@ -1,0 +1,61 @@
+[
+  {
+    "movie": {
+      "movie_id": 1,
+      "movie_title": "Inception",
+      "genre": "Sci-Fi",
+      "duration": 148,
+      "rating": "PG-13",
+      "release_year": 2010
+    },
+    "showtimes": [
+      {
+        "showtime_id": 1,
+        "theater": "Cinema 1",
+        "showtime_start": "2025-03-16T18:00:00",
+        "showtime_end": "2025-03-16T20:28:00",
+        "max_seats": 50,
+        "available_seats": 48,
+        "price": 12.50,
+        "seats": [
+          "A1",
+          "A2"
+        ]
+      },
+      {
+        "showtime_id": 2,
+        "theater": "Cinema 2",
+        "showtime_start": "2025-03-16T20:00:00",
+        "showtime_end": "2025-03-16T22:28:00",
+        "max_seats": 30,
+        "available_seats": 30,
+        "price": 12.50,
+        "seats": []
+      }
+    ]
+  },
+  {
+    "movie": {
+      "movie_id": 2,
+      "movie_title": "The Dark Knight",
+      "genre": "Action",
+      "duration": 152,
+      "rating": "PG-13",
+      "release_year": 2008
+    },
+    "showtimes": [
+      {
+        "showtime_id": 3,
+        "theater": "Cinema 1",
+        "showtime_start": "2025-03-16T15:00:00",
+        "showtime_end": "2025-03-16T17:32:00",
+        "max_seats": 50,
+        "available_seats": 49,
+        "price": 12.50,
+        "seats": [
+          "B1"
+        ]
+      }
+    ]
+  }
+]

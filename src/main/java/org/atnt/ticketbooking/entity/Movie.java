@@ -1,10 +1,6 @@
 package org.atnt.ticketbooking.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,12 +10,14 @@ import lombok.Setter;
 @Entity
 @Table(name = "movies")
 public class Movie {
-    // Getters and setters
-    @Id
+    @Id @Column(name = "movie_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String title;
-    private String description;
-
+    private Long Id;
+    @Column(name = "movie_title")
+    private String movieTitle;
+    private String genre;
+    private Integer duration;
+    private String rating;
+    @Column(name = "release_year")
+    private Integer releaseYear;
 }

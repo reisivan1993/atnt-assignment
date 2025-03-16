@@ -1,15 +1,6 @@
 package org.atnt.ticketbooking.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,29 +11,27 @@ import java.time.LocalDateTime;
 
 @Setter @Getter @AllArgsConstructor @NoArgsConstructor
 @Entity
-@Table(name = "bookings",
-        indexes = {
-                @Index(name = "idx_booking_showtime_seat", columnList = "showtime_id,seatNumber"),
-                @Index(name = "idx_booking_user", columnList = "userId")
-        })
-public class Booking {
-    @Id
+@Table(name = "bookings")
+public class Ticket {
+    @Id @JoinColumn(name = "ticket_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    private String userId;
-
     @ManyToOne
     @JoinColumn(name = "showtime_id")
     private Showtime showtime;
-
+    @Column(name = "user_id")
+    private Integer userId;
+    @Column(name = "seat_number")
     private String seatNumber;
-    private double price;
-
+    @Column(name = "price_booked")
+    private double priceBooked;
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    private LocalDateTime bookingTime;
     private LocalDateTime reservationExpiry;
 
     public boolean isReservationExpired() {
