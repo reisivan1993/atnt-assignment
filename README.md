@@ -21,7 +21,7 @@ This project is a Spring Boot implementation of the backend APIs for a ticket bo
 - I used unique constraint to ensure no seat is booked twice for the same showtime. in production we will be use distributed locking with redis
 - in production the booking machination will be in two phases -> reservation, and confirmation(booking)
 - regarding normalized vs. denormalized schema in postgresql, although it's not a unified table as the task require. I think it more best practice to maintain normalized approach cause data consistency is harder to maintain in denormalized approach.
-  if reads will become a bottleneck we can consider materialized view or move data to cache system
+  if reads will become a bottleneck we can consider materialized view or move data to cache system.
 
 ## Features
 * Ticket Booking -> Users can browse through the available movie, select the desired event, and book tickets for it.
@@ -46,6 +46,7 @@ To set up the project on your local machine, follow these steps:(in production i
 6. Build the project using Maven: `mvn clean install`
 7. Run the application: `mvn spring-boot:run`
 8. The application will be accessible at [http://localhost:8080](`http://localhost:8080`).
+9. I tried to prepare docker-compose, but unfortunately its new computer, so I didn't want to waste time on that
 
 ## Database Setup
 This project uses Postgresql as the database. Follow these steps to set up the database:
